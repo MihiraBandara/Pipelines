@@ -1,0 +1,54 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - <folder path>
+
+resources:
+- repo: self
+
+name: $(calVer)
+
+variables:
+- group: shared
+- name: imageRepository
+  value: <container name>
+- name: dockerfilePath
+  value: $(Build.SourcesDirectory)/<docker file path>/Dockerfile
+- name: buildRev
+  value: $[counter(format('{0:yyyyMM}', pipeline.startTime), 1)]
+- name: calVer
+  value: $[format('{0:yyyy}.{0:M}.{1}', pipeline.startTime, variables.buildRev)]
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Docker@2
+      displayName: Docker Build
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection) <This value taking from variable group>
+        buildContext: <.sln location>
+        tags: |
+          $(calVer)
+          latest
+
+    - task: Docker@2
+      displayName: Docker Push
+      inputs:
+        command: Push
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(calVer)
+          latest
