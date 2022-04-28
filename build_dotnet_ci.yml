@@ -1,0 +1,24 @@
+trigger: none
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+- stage: Build
+  condition: ne(variables['Build.SourceBranch'], 'refs/heads/main')
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: NuGetAuthenticate@0
+      displayName: 'NuGet Authenticate'
+
+    - task: DotNetCoreCLI@2
+      displayName: Building
+      inputs:
+        command: build
+        projects: '$(Build.SourcesDirectory)/<project path>/project.csproj'
+        arguments: '-c $(buildConfiguration) --no-incremental'
